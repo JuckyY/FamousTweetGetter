@@ -28,23 +28,23 @@ logger.addHandler(h)
 ## Twitter API                        ##
 ## Consumerキー、アクセストークン設定      ##
 ########################################
-Consumer_key = env('CONSUMER_KEY')
-Consumer_secret = env('CONSUMER_SECRET')
-Access_token = env('ACCESS_TOKEN')
-Access_secret = env('ACCESS_SECRET')
+CONSUMER_KEY = env('CONSUMER_KEY')
+CONSUMER_SECRET = env('CONSUMER_SECRET')
+ACCESS_TOKEN = env('ACCESS_TOKEN')
+ACCESS_SECRET = env('ACCESS_SECRET')
 
 # 処理実行日
 now_date = datetime.datetime.now()
 now_date_str = now_date.strftime("%y%m%d")
 
 # エクセルのヘッダーカラム名を定義
-columns_name = ['ツイート時間', 'ツイート内容', 'いいね数', 'リツイート', 'ユーザー名', 'ユーザーID', 'フォロー数', 'フォロワー数']
+COLUMNS_NAME = ['ツイート時間', 'ツイート内容', 'いいね数', 'リツイート', 'ユーザー名', 'ユーザーID', 'フォロー数', 'フォロワー数']
 
 # 取得するツイート数
-get_item_cnt = 50000
+GET_TWEET_CNT = 50000
 
 # 15分のインターバル API制限回避
-interval_point = list(range(2499, 45000, 2500))
+INTERVAL_POINT = list(range(2499, GET_TWEET_CNT, 2500))
 
 
 def twitter_auth():
@@ -52,8 +52,8 @@ def twitter_auth():
 
     Return Tweepy: api
     """
-    auth = tweepy.OAuthHandler(Consumer_key, Consumer_secret)
-    auth.set_access_token(Access_token, Access_secret)
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     logger.debug('Twitter 認証が成功しました。')
     print('Twitter 認証が成功しました。')
@@ -73,7 +73,7 @@ def get_tweets(api):
             max_id = tweet.id
 
         for num, tweet in enumerate(
-                tweepy.Cursor(api.search, q=search_word, exclude_replies=True, max_id=max_id - 1).items(get_item_cnt)):
+                tweepy.Cursor(api.search, q=search_word, exclude_replies=True, max_id=max_id - 1).items(GET_TWEET_CNT)):
             try:
                 if list(tweet.text)[:4] != ['R', 'T', ' ', '@'] and tweet.favorite_count >= 100:
                     # ['ツイート時間', 'ツイート内容', 'いいね数', 'リツイート', 'ユーザー名', 'ユーザーID', 'フォロー数', 'フォロワー数']
@@ -88,13 +88,13 @@ def get_tweets(api):
                                          ])
 
                     # pandasで[over_100_fav]をデータフレーム型に変換　⇒　[df]に格納
-                    df = pd.DataFrame(over_100_fav, columns=columns_name)
+                    df = pd.DataFrame(over_100_fav, columns=COLUMNS_NAME)
 
                     # pandasで[df]をExcelに出力
                     df.to_excel(f'いいね100超ツイート分析データ_{now_date_str}.xlsx', sheet_name='Sheet1')
                     print('ツイートを取得しました。')
 
-                elif num in interval_point or (num == (get_item_cnt - 1) and i != 1):
+                elif num in INTERVAL_POINT or (num == (GET_TWEET_CNT - 1) and i != 1):
                     time.sleep(60 * 15)
                     api = twitter_auth()
 
